@@ -8,7 +8,7 @@
 
 <body style="text-align:center; font-family:Arial;">
 
-<h2>📦 Scan Part QR</h2>
+<h2>📦 Scan OR Enter Part</h2>
 
 <p id="status">Click below to start scanner</p>
 
@@ -18,7 +18,16 @@
   📷 Start Scanner
 </button>
 
-<p><b>Part No:</b> <span id="part">Not scanned</span></p>
+<br><br>
+
+<!-- 🔥 MANUAL INPUT -->
+<input type="text" id="manualPart" placeholder="Enter Part No manually" />
+
+<button onclick="useManualPart()">Use Part</button>
+
+<br><br>
+
+<p><b>Selected Part:</b> <span id="part">None</span></p>
 
 <input type="number" id="qty" placeholder="Enter Quantity" />
 
@@ -42,7 +51,7 @@ function startScanner() {
 
             partNo = decodedText.trim();
 
-            alert("Scanned: [" + partNo + "]"); // debug
+            alert("Scanned: [" + partNo + "]");
 
             document.getElementById("part").innerText = partNo;
             document.getElementById("status").innerText = "✅ QR Scanned";
@@ -53,12 +62,28 @@ function startScanner() {
     });
 }
 
+// 🔥 NEW FUNCTION FOR MANUAL ENTRY
+function useManualPart() {
+
+    let manualValue = document.getElementById("manualPart").value.trim();
+
+    if (!manualValue) {
+        alert("Enter a valid Part No");
+        return;
+    }
+
+    partNo = manualValue;
+
+    document.getElementById("part").innerText = partNo;
+    document.getElementById("status").innerText = "✍️ Manual Part Selected";
+}
+
 function submitData() {
 
     let qty = document.getElementById("qty").value;
 
     if (!partNo) {
-        alert("Scan QR first");
+        alert("Scan or enter Part No first");
         return;
     }
 
