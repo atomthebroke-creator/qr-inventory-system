@@ -39,7 +39,12 @@ function startScanner() {
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
         (decodedText) => {
+
             partNo = decodedText;
+
+            // 🔥 DEBUG ALERT
+            alert("Scanned: [" + partNo + "]");
+
             document.getElementById("part").innerText = partNo;
             document.getElementById("status").innerText = "✅ QR Scanned";
         }
