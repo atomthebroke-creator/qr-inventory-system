@@ -20,14 +20,23 @@
 
 <br><br>
 
-<!-- 🔥 MANUAL INPUT -->
+<!-- MANUAL PART INPUT -->
 <input type="text" id="manualPart" placeholder="Enter Part No manually" />
-
 <button onclick="useManualPart()">Use Part</button>
 
 <br><br>
 
 <p><b>Selected Part:</b> <span id="part">None</span></p>
+
+<!-- 🔥 NEW FIELDS -->
+<input type="text" id="empId" placeholder="Employee ID" />
+<br><br>
+
+<input type="text" id="empName" placeholder="Employee Name" />
+<br><br>
+
+<input type="text" id="wo" placeholder="WO Description" />
+<br><br>
 
 <input type="number" id="qty" placeholder="Enter Quantity" />
 
@@ -62,7 +71,6 @@ function startScanner() {
     });
 }
 
-// 🔥 NEW FUNCTION FOR MANUAL ENTRY
 function useManualPart() {
 
     let manualValue = document.getElementById("manualPart").value.trim();
@@ -81,9 +89,17 @@ function useManualPart() {
 function submitData() {
 
     let qty = document.getElementById("qty").value;
+    let empId = document.getElementById("empId").value.trim();
+    let empName = document.getElementById("empName").value.trim();
+    let wo = document.getElementById("wo").value.trim();
 
     if (!partNo) {
         alert("Scan or enter Part No first");
+        return;
+    }
+
+    if (!empId || !empName) {
+        alert("Enter Employee ID and Name");
         return;
     }
 
@@ -96,7 +112,10 @@ function submitData() {
         method: "POST",
         body: JSON.stringify({
             partNo: partNo,
-            qty: qty
+            qty: qty,
+            wo: wo,
+            empId: empId,
+            empName: empName
         })
     })
     .then(res => res.text())
