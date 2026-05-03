@@ -1,4 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Inventory Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin-top: 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-bottom: 5px;
+    }
+
+    p {
+      color: gray;
+      margin-top: 0;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    button:active {
+      background: #0056b3;
+    }
+
+    #reader {
+      margin-top: 10px;
+    }
+
+    .secondary-btn {
+      background: #6c757d;
+    }
+
+    .part-box {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>📦 Inventory Scanner</h2>
+  <p>Scan QR or enter part manually</p>
+
+  <!-- SCANNER CARD -->
+  <div class="card">
+    <div id="reader"></div>
+
+    <button onclick="startScanner()">📷 Start Scanner</button>
+
+    <input type="text" id="manualPart" placeholder="Enter Part No manually" />
+    <button class="secondary-btn" onclick="useManualPart()">Use Part</button>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card">
+
+    <div class="part-box">
+      Selected Part: <span id="part">None</span>
+    </div>
+
+    <input type="date" id="dateUsed" />
+
+    <input type="text" id="empId" placeholder="Employee ID" />
+    <input type="text" id="empName" placeholder="Employee Name" />
+
+    <input type="text" id="wo" placeholder="WO Description" />
+
+    <input type="number" id="qty" placeholder="Enter Quantity" />
+
+    <button onclick="submitData()">Submit</button>
+
+    <p id="status">Ready</p>
+  </div>
+
+</div>
+
 <script>
+let partNo = "";
+let scanner;
+
+// Default date
+window.onload = function () {
+  let today = new Date().toISOString().split('T')[0];
+  document.getElementById("dateUsed").value = today;
+};
+
+function startScanner() {
+  document.getElementById("status").innerText = "Requesting camera...";
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      partNo = decodedText.trim();
+      document.getElementById("part").innerText = partNo;
+      document.getElementById("status").innerText = "✅ QR Scanned";
+      scanner.stop();
+    }
+  ).catch(() => {
+    document.getElementById("status").innerText = "❌ Camera permission denied";
+  });
+}
+
+function useManualPart() {
+  let val = document.getElementById("manualPart").value.trim();
+
+  if (!val) return alert("Enter valid part number");
+
+  partNo = val;
+  document.getElementById("part").innerText = partNo;
+  document.getElementById("status").innerText = "✍️ Manual Part Selected";
+}
+
+function submitData() {
+
+  let qty = document.getElementById("qty").value;
+  let empId = document.getElementById("empId").value.trim();
+  let empName = document.getElementById("empName").value.trim();
+  let wo = document.getElementById("wo").value.trim();
+  let dateUsed = document.getElementById("dateUsed").value;
+
+  if (!partNo) return alert("Select part first");
+  if (!qty || qty <= 0) return alert("Enter valid quantity");
+  if (!empId || !empName) return alert("Enter employee details");
+  if (!dateUsed) return alert("Select date");
+
+  document.getElementById("status").innerText = "⏳ Submitting...";
+
+  fetch("YOUR_WEB_APP_URL", {
+    method: "POST",
+    body: JSON.stringify({
+      partNo,
+      qty,
+      wo,
+      empId,
+      empName,
+      dateUsed
+    })
+  })
+  .then(res => res.text())
+  .then(msg => {
+    alert(msg);
+    resetForm();
+  })
+  .catch(() => {
+    alert("❌ Server error");
+  });
+}
+
+function resetForm() {
+  partNo = "";
+  document.getElementById("part").innerText = "None";
+  document.getElementById("qty").value = "";
+  document.getElementById("wo").value = "";
+  document.getElementById("manualPart").value = "";
+  document.getElementById("status").innerText = "Ready for next scan";
+}
+</script>
+
+</body>
+</html><script>
 let partNo = "";
 let scanner;
 
