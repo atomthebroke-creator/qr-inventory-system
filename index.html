@@ -1,4 +1,98 @@
-<!DOCTYPE html>
+<script>
+let partNo = "";
+let scanner;
+
+// ✅ Default date
+window.onload = function () {
+  let today = new Date().toISOString().split('T')[0];
+  document.getElementById("dateUsed").value = today;
+};
+
+// ✅ START SCANNER
+function startScanner() {
+  document.getElementById("status").innerText = "Requesting camera...";
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+
+      partNo = decodedText.trim();
+
+      document.getElementById("part").innerText = partNo;
+      document.getElementById("status").innerText = "✅ QR Scanned";
+
+      // 🔥 Stop scanner after success
+      scanner.stop();
+    }
+  ).catch(() => {
+    document.getElementById("status").innerText = "❌ Camera permission denied";
+  });
+}
+
+// ✅ MANUAL ENTRY
+function useManualPart() {
+  let val = document.getElementById("manualPart").value.trim();
+
+  if (!val) {
+    alert("Enter valid part number");
+    return;
+  }
+
+  partNo = val;
+  document.getElementById("part").innerText = partNo;
+  document.getElementById("status").innerText = "✍️ Manual Part Selected";
+}
+
+// ✅ SUBMIT DATA
+function submitData() {
+
+  let qty = document.getElementById("qty").value;
+  let empId = document.getElementById("empId").value.trim();
+  let empName = document.getElementById("empName").value.trim();
+  let wo = document.getElementById("wo").value.trim();
+  let dateUsed = document.getElementById("dateUsed").value;
+
+  if (!partNo) return alert("Select part first");
+  if (!qty || qty <= 0) return alert("Enter valid quantity");
+  if (!empId || !empName) return alert("Enter employee details");
+  if (!dateUsed) return alert("Select date");
+
+  document.getElementById("status").innerText = "⏳ Submitting...";
+
+  fetch("YOUR_WEB_APP_URL", {
+    method: "POST",
+    body: JSON.stringify({
+      partNo,
+      qty,
+      wo,
+      empId,
+      empName,
+      dateUsed
+    })
+  })
+  .then(res => res.text())
+  .then(msg => {
+    alert(msg);
+    resetForm();
+  })
+  .catch(() => {
+    alert("❌ Error connecting to server");
+  });
+}
+
+// ✅ RESET FORM AFTER SUBMIT
+function resetForm() {
+  partNo = "";
+  document.getElementById("part").innerText = "None";
+  document.getElementById("qty").value = "";
+  document.getElementById("wo").value = "";
+  document.getElementById("manualPart").value = "";
+  document.getElementById("status").innerText = "Ready for next scan";
+}
+</script><!DOCTYPE html>
 <html>
 <head>
   <title>QR Inventory System</title>
