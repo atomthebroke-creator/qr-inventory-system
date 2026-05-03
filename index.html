@@ -8,6 +8,120 @@
 
 <body style="text-align:center; font-family:Arial;">
 
+<h2>📦 Inventory Scanner</h2>
+
+<p id="status">Start scanner or enter part manually</p>
+
+<div id="reader" style="width:300px; margin:auto;"></div>
+
+<button onclick="startScanner()">📷 Start Scanner</button>
+
+<br><br>
+
+<input type="text" id="manualPart" placeholder="Enter Part No manually" />
+<button onclick="useManualPart()">Use Part</button>
+
+<br><br>
+
+<p><b>Selected Part:</b> <span id="part">None</span></p>
+
+<br>
+
+<input type="date" id="dateUsed" />
+
+<br><br>
+
+<input type="text" id="empId" placeholder="Employee ID" />
+<br><br>
+
+<input type="text" id="empName" placeholder="Employee Name" />
+<br><br>
+
+<input type="text" id="wo" placeholder="WO Description" />
+<br><br>
+
+<input type="number" id="qty" placeholder="Enter Quantity" />
+
+<br><br>
+
+<button onclick="submitData()">Submit</button>
+
+<script>
+let partNo = "";
+let scanner;
+
+// ✅ Set default date
+window.onload = function () {
+  let today = new Date().toISOString().split('T')[0];
+  document.getElementById("dateUsed").value = today;
+};
+
+function startScanner() {
+  document.getElementById("status").innerText = "Requesting camera...";
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      partNo = decodedText.trim();
+      document.getElementById("part").innerText = partNo;
+      document.getElementById("status").innerText = "✅ QR Scanned";
+    }
+  ).catch(() => {
+    document.getElementById("status").innerText = "❌ Camera permission denied";
+  });
+}
+
+function useManualPart() {
+  let val = document.getElementById("manualPart").value.trim();
+  if (!val) return alert("Enter valid part number");
+
+  partNo = val;
+  document.getElementById("part").innerText = partNo;
+}
+
+function submitData() {
+
+  let qty = document.getElementById("qty").value;
+  let empId = document.getElementById("empId").value.trim();
+  let empName = document.getElementById("empName").value.trim();
+  let wo = document.getElementById("wo").value.trim();
+  let dateUsed = document.getElementById("dateUsed").value;
+
+  if (!partNo) return alert("Select part first");
+  if (!qty || qty <= 0) return alert("Enter valid qty");
+  if (!empId || !empName) return alert("Enter employee details");
+  if (!dateUsed) return alert("Select date");
+
+  fetch("YOUR_WEB_APP_URL", {
+    method: "POST",
+    body: JSON.stringify({
+      partNo,
+      qty,
+      wo,
+      empId,
+      empName,
+      dateUsed
+    })
+  })
+  .then(res => res.text())
+  .then(msg => alert(msg));
+}
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+  <title>QR Inventory System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body style="text-align:center; font-family:Arial;">
+
 <h2>📦 Scan OR Enter Part</h2>
 
 <p id="status">Click below to start scanner</p>
