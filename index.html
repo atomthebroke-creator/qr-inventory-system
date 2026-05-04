@@ -23,7 +23,6 @@
       padding: 0 16px;
     }
 
-    /* Top bar */
     .topbar {
       background: #2d0f5e;
       border-radius: 20px 20px 0 0;
@@ -34,7 +33,6 @@
     .topbar h1 { font-size: 18px; font-weight: 600; color: #e8d5ff; }
     .topbar p  { font-size: 13px; color: #9b6fd4; margin-top: 3px; }
 
-    /* Cards */
     .card {
       background: #240d45;
       border: 1px solid #3d1f6e;
@@ -51,7 +49,6 @@
       margin-bottom: 12px;
     }
 
-    /* Scanner */
     #reader-wrap {
       overflow: hidden;
       border-radius: 12px;
@@ -62,7 +59,6 @@
     #reader-wrap.open { max-height: 300px; }
     #reader { width: 100%; }
 
-    /* Buttons */
     .btn-main {
       width: 100%;
       padding: 13px;
@@ -92,17 +88,15 @@
     }
     .btn-sec:active { background: #1a0a2e; }
 
-    /* Divider */
     .divider {
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 12px 0;
     }
-    .divider hr  { flex: 1; border: none; border-top: 1px solid #3d1f6e; }
+    .divider hr   { flex: 1; border: none; border-top: 1px solid #3d1f6e; }
     .divider span { font-size: 11px; color: #5b2fa0; }
 
-    /* Inputs */
     input[type="text"],
     input[type="number"],
     input[type="date"] {
@@ -117,10 +111,9 @@
       margin-top: 6px;
       transition: border-color .15s;
     }
-    input:focus { border-color: #7c3aed; }
+    input:focus        { border-color: #7c3aed; }
     input::placeholder { color: #5b2fa0; }
 
-    /* Part pill */
     .part-pill {
       background: #1a0a2e;
       border: 1px solid #5b2fa0;
@@ -150,7 +143,6 @@
       margin-bottom: 6px;
     }
 
-    /* Field row */
     .field-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -164,7 +156,6 @@
       display: block;
     }
 
-    /* Submit */
     .submit-btn {
       width: 100%;
       padding: 14px;
@@ -178,16 +169,10 @@
       margin-top: 14px;
       transition: background .15s;
     }
-    .submit-btn:active { background: #6d28d9; }
+    .submit-btn:active   { background: #6d28d9; }
     .submit-btn:disabled { background: #3d1f6e; color: #5b2fa0; cursor: not-allowed; }
 
-    .status {
-      text-align: center;
-      font-size: 13px;
-      color: #7a4bbf;
-      margin-top: 10px;
-      min-height: 20px;
-    }
+    .status         { text-align: center; font-size: 13px; color: #7a4bbf; margin-top: 10px; min-height: 20px; }
     .status.success { color: #86efac; }
     .status.error   { color: #f87171; }
   </style>
@@ -204,17 +189,9 @@
   <!-- Scanner card -->
   <div class="card">
     <div class="card-title">Scan part</div>
-
-    <div id="reader-wrap">
-      <div id="reader"></div>
-    </div>
-
-    <button class="btn-main" id="scan-btn" onclick="toggleScanner()">
-      Start scanner
-    </button>
-
+    <div id="reader-wrap"><div id="reader"></div></div>
+    <button class="btn-main" id="scan-btn" onclick="toggleScanner()">Start scanner</button>
     <div class="divider"><hr><span>or enter manually</span><hr></div>
-
     <input type="text" id="manualPart" placeholder="Enter part number">
     <button class="btn-sec" onclick="useManual()">Use part</button>
   </div>
@@ -259,18 +236,22 @@
 </div>
 
 <script>
-  // ─── CONFIG ───────────────────────────────────────────────
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/execL"; // ← paste your Apps Script URL here
-  const SECRET      = "12345"; // ← must match Script Properties token
-  // ──────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+  //  STEP 1 — Replace the URL below with your Apps Script URL
+  // ═══════════════════════════════════════════════════════════
+  var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
 
-  const COL = { PART_NO:0, DESC:1, TOTAL:2, USED:3, BIN:4 };
+  // ═══════════════════════════════════════════════════════════
+  //  STEP 2 — Replace the token below with your chosen token
+  //           (must match TOKEN value in Script Properties)
+  // ═══════════════════════════════════════════════════════════
+  var SECRET = "12345";
 
-  let scanner  = null;
-  let scanning = false;
-  let partNo   = "";
+  // ── Init ──────────────────────────────────────────────────
+  var scanner  = null;
+  var scanning = false;
+  var partNo   = "";
 
-  // ── Init ────────────────────────────────────────────────────
   window.onload = function () {
     document.getElementById("dateUsed").value =
       new Date().toISOString().split("T")[0];
@@ -280,7 +261,7 @@
       localStorage.getItem("empName") || "";
   };
 
-  // ── Scanner ─────────────────────────────────────────────────
+  // ── Scanner ───────────────────────────────────────────────
   function toggleScanner() {
     scanning ? stopScanner() : startScanner();
   }
@@ -288,73 +269,75 @@
   function startScanner() {
     document.getElementById("reader-wrap").classList.add("open");
     document.getElementById("scan-btn").textContent = "Stop scanner";
-    setStatus("Requesting camera…", "");
+    setStatus("Requesting camera...", "");
     scanning = true;
 
     scanner = new Html5Qrcode("reader");
     scanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 220 },
-      (decoded) => {
+      function (decoded) {
         if (navigator.vibrate) navigator.vibrate(150);
         stopScanner();
         selectPart(decoded.trim());
       }
-    ).catch(() => {
+    ).catch(function () {
       setStatus("Camera permission denied", "error");
       stopScanner();
     });
   }
 
   function stopScanner() {
-    if (scanner) { scanner.stop().catch(() => {}); scanner = null; }
+    if (scanner) { scanner.stop().catch(function () {}); scanner = null; }
     scanning = false;
     document.getElementById("reader-wrap").classList.remove("open");
     document.getElementById("scan-btn").textContent = "Start scanner";
   }
 
-  // ── Manual entry ─────────────────────────────────────────────
+  // ── Manual entry ──────────────────────────────────────────
   function useManual() {
-    const val = document.getElementById("manualPart").value.trim();
+    var val = document.getElementById("manualPart").value.trim();
     if (!val) { alert("Enter a part number first"); return; }
     selectPart(val);
     document.getElementById("manualPart").value = "";
   }
 
-  // ── Part lookup ──────────────────────────────────────────────
+  // ── Part lookup ───────────────────────────────────────────
   function selectPart(no) {
     partNo = no;
     document.getElementById("part-display").textContent = no;
-    setStatus("Looking up part…", "");
+    setStatus("Looking up part...", "");
 
-    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + SECRET)
-      .then(r => r.json())
-      .then(d => {
-        const stockEl = document.getElementById("stock-display");
-        const descEl  = document.getElementById("part-desc");
+    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + encodeURIComponent(SECRET))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var stockEl = document.getElementById("stock-display");
+        var descEl  = document.getElementById("part-desc");
         if (d.error) {
           setStatus("Part not found", "error");
           stockEl.style.display = "none";
           descEl.textContent = "";
         } else {
-          const low = d.remaining <= (d.minStock || 5);
+          var low = d.remaining <= 5;
           stockEl.textContent   = d.remaining + " remaining";
           stockEl.className     = "stock-badge " + (low ? "stock-low" : "stock-ok");
           stockEl.style.display = "inline";
-          descEl.textContent    = d.description + " · Bin " + d.bin;
+          descEl.textContent    = d.description + " \u00b7 Bin " + d.bin;
           setStatus("Ready", "");
         }
       })
-      .catch(() => setStatus("Lookup failed — check URL", "error"));
+      .catch(function () {
+        setStatus("Lookup failed \u2014 check URL", "error");
+      });
   }
 
-  // ── Submit ───────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────
   function submitData() {
-    const qty     = Number(document.getElementById("qty").value);
-    const empId   = document.getElementById("empId").value.trim();
-    const empName = document.getElementById("empName").value.trim();
-    const wo      = document.getElementById("wo").value.trim();
-    const dateUsed = document.getElementById("dateUsed").value;
+    var qty      = Number(document.getElementById("qty").value);
+    var empId    = document.getElementById("empId").value.trim();
+    var empName  = document.getElementById("empName").value.trim();
+    var wo       = document.getElementById("wo").value.trim();
+    var dateUsed = document.getElementById("dateUsed").value;
 
     if (!partNo)            { alert("Select a part first"); return; }
     if (!qty || qty <= 0)   { alert("Enter a valid quantity"); return; }
@@ -364,39 +347,43 @@
     localStorage.setItem("empId",   empId);
     localStorage.setItem("empName", empName);
 
-    const btn = document.getElementById("submit-btn");
+    var btn = document.getElementById("submit-btn");
     btn.disabled = true;
-    setStatus("Submitting…", "");
+    setStatus("Submitting...", "");
 
     fetch(WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({
-        token: SECRET,
-        partNo, qty, wo, empId, empName,
-        dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
+        token    : SECRET,
+        partNo   : partNo,
+        qty      : qty,
+        wo       : wo,
+        empId    : empId,
+        empName  : empName,
+        dateUsed : new Date(dateUsed + "T00:00:00+05:30").toISOString()
       })
     })
-    .then(r => r.json())
-    .then(d => {
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
       btn.disabled = false;
       if (d.success) {
-        setStatus("Done — " + d.remaining + " remaining", "success");
+        setStatus("Done \u2014 " + d.remaining + " remaining", "success");
         resetForm();
       } else {
         setStatus("Error: " + d.error, "error");
       }
     })
-    .catch(() => {
+    .catch(function () {
       btn.disabled = false;
       setStatus("Server error", "error");
     });
   }
 
-  // ── Helpers ──────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────
   function setStatus(msg, type) {
-    const el = document.getElementById("status");
+    var el = document.getElementById("status");
     el.textContent = msg;
-    el.className = "status " + type;
+    el.className   = "status " + type;
   }
 
   function resetForm() {
