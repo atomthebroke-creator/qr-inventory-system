@@ -1,196 +1,412 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>Inventory Scanner</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/html5-qrcode"></script>
-
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      text-align: center;
+      background: #0f0520;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px 0 40px;
     }
 
     .container {
+      width: 100%;
       max-width: 400px;
-      margin: auto;
-      padding: 20px;
+      padding: 0 16px;
     }
 
+    /* Top bar */
+    .topbar {
+      background: #2d0f5e;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px 16px;
+      border: 1px solid #3d1f6e;
+      border-bottom: none;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 600; color: #e8d5ff; }
+    .topbar p  { font-size: 13px; color: #9b6fd4; margin-top: 3px; }
+
+    /* Cards */
     .card {
-      background: white;
-      padding: 20px;
-      margin-top: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      background: #240d45;
+      border: 1px solid #3d1f6e;
+      padding: 16px;
+      margin-top: 10px;
+      border-radius: 16px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9b6fd4;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
     }
 
-    h2 { margin-bottom: 5px; }
-    p { color: gray; }
+    /* Scanner */
+    #reader-wrap {
+      overflow: hidden;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      max-height: 0;
+      transition: max-height .35s ease;
+    }
+    #reader-wrap.open { max-height: 300px; }
+    #reader { width: 100%; }
 
-    input, button {
+    /* Buttons */
+    .btn-main {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #7c3aed;
+      color: #fff;
+      transition: background .15s;
+    }
+    .btn-main:active { background: #6d28d9; }
+
+    .btn-sec {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: #c084fc;
+      border: 1px solid #5b2fa0;
+      margin-top: 8px;
+      transition: background .15s;
+    }
+    .btn-sec:active { background: #1a0a2e; }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .divider hr  { flex: 1; border: none; border-top: 1px solid #3d1f6e; }
+    .divider span { font-size: 11px; color: #5b2fa0; }
+
+    /* Inputs */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 10px;
+      border: 1px solid #3d1f6e;
+      background: #1a0a2e;
+      font-size: 14px;
+      color: #e8d5ff;
+      outline: none;
+      margin-top: 6px;
+      transition: border-color .15s;
+    }
+    input:focus { border-color: #7c3aed; }
+    input::placeholder { color: #5b2fa0; }
+
+    /* Part pill */
+    .part-pill {
+      background: #1a0a2e;
+      border: 1px solid #5b2fa0;
+      border-radius: 10px;
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .plabel { font-size: 11px; color: #9b6fd4; }
+    .pval   { font-size: 15px; font-weight: 600; color: #e8d5ff; margin-top: 2px; }
+
+    .stock-badge {
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .stock-ok  { background: #14532d; border: 1px solid #166534; color: #86efac; }
+    .stock-low { background: #713f12; border: 1px solid #854d0e; color: #fde68a; }
+
+    .part-desc {
+      font-size: 12px;
+      color: #9b6fd4;
+      margin-bottom: 6px;
     }
 
-    button {
-      background: #007bff;
-      color: white;
+    /* Field row */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .field-label {
+      font-size: 11px;
+      color: #9b6fd4;
+      margin-top: 12px;
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    /* Submit */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
       border: none;
-      font-weight: bold;
+      background: #7c3aed;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: background .15s;
     }
+    .submit-btn:active { background: #6d28d9; }
+    .submit-btn:disabled { background: #3d1f6e; color: #5b2fa0; cursor: not-allowed; }
 
-    .secondary {
-      background: #6c757d;
-    }
-
-    #reader {
+    .status {
+      text-align: center;
+      font-size: 13px;
+      color: #7a4bbf;
       margin-top: 10px;
+      min-height: 20px;
     }
-
-    .part-box {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 10px;
-    }
+    .status.success { color: #86efac; }
+    .status.error   { color: #f87171; }
   </style>
 </head>
-
 <body>
 
 <div class="container">
 
-  <h2>📦 Inventory Scanner</h2>
-  <p>Scan QR or enter part manually</p>
-
-  <!-- SCANNER -->
-  <div class="card">
-
-    <div id="reader"></div>
-
-    <button onclick="startScanner()">📷 Start Scanner</button>
-
-    <input type="text" id="manualPart" placeholder="Enter Part No manually">
-    <button class="secondary" onclick="useManualPart()">Use Part</button>
-
+  <div class="topbar">
+    <h1>Inventory Scanner</h1>
+    <p>Scan QR or enter part manually</p>
   </div>
 
-  <!-- FORM -->
+  <!-- Scanner card -->
   <div class="card">
+    <div class="card-title">Scan part</div>
 
-    <div class="part-box">
-      Selected Part: <span id="part">None</span>
+    <div id="reader-wrap">
+      <div id="reader"></div>
     </div>
 
+    <button class="btn-main" id="scan-btn" onclick="toggleScanner()">
+      Start scanner
+    </button>
+
+    <div class="divider"><hr><span>or enter manually</span><hr></div>
+
+    <input type="text" id="manualPart" placeholder="Enter part number">
+    <button class="btn-sec" onclick="useManual()">Use part</button>
+  </div>
+
+  <!-- Form card -->
+  <div class="card">
+    <div class="card-title">Usage details</div>
+
+    <div class="part-pill">
+      <div>
+        <div class="plabel">Part no.</div>
+        <div class="pval" id="part-display">None selected</div>
+      </div>
+      <span class="stock-badge stock-ok" id="stock-display" style="display:none"></span>
+    </div>
+    <div class="part-desc" id="part-desc"></div>
+
+    <span class="field-label">Date used</span>
     <input type="date" id="dateUsed">
 
-    <input type="text" id="empId" placeholder="Employee ID">
-    <input type="text" id="empName" placeholder="Employee Name">
+    <div class="field-row">
+      <div>
+        <span class="field-label">Employee ID</span>
+        <input type="text" id="empId" placeholder="EMP-001">
+      </div>
+      <div>
+        <span class="field-label">Name</span>
+        <input type="text" id="empName" placeholder="Your name">
+      </div>
+    </div>
 
-    <input type="text" id="wo" placeholder="WO Description">
+    <span class="field-label">WO description</span>
+    <input type="text" id="wo" placeholder="e.g. PM-2025-06 Motor overhaul">
 
-    <input type="number" id="qty" placeholder="Enter Quantity">
+    <span class="field-label">Quantity</span>
+    <input type="number" id="qty" placeholder="1" min="1">
 
-    <button onclick="submitData()">Submit</button>
-
-    <p id="status">Ready</p>
-
+    <button class="submit-btn" id="submit-btn" onclick="submitData()">Submit usage</button>
+    <div class="status" id="status">Ready</div>
   </div>
 
 </div>
 
 <script>
-let partNo = "";
-let scanner;
+  // ─── CONFIG ───────────────────────────────────────────────
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/execL"; // ← paste your Apps Script URL here
+  const SECRET      = "12345"; // ← must match Script Properties token
+  // ──────────────────────────────────────────────────────────
 
-// Default date
-window.onload = function () {
-  let today = new Date().toISOString().split('T')[0];
-  document.getElementById("dateUsed").value = today;
-};
+  const COL = { PART_NO:0, DESC:1, TOTAL:2, USED:3, BIN:4 };
 
-// Start scanner
-function startScanner() {
-  document.getElementById("status").innerText = "Requesting camera...";
+  let scanner  = null;
+  let scanning = false;
+  let partNo   = "";
 
-  scanner = new Html5Qrcode("reader");
+  // ── Init ────────────────────────────────────────────────────
+  window.onload = function () {
+    document.getElementById("dateUsed").value =
+      new Date().toISOString().split("T")[0];
+    document.getElementById("empId").value =
+      localStorage.getItem("empId") || "";
+    document.getElementById("empName").value =
+      localStorage.getItem("empName") || "";
+  };
 
-  scanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (decodedText) => {
-      partNo = decodedText.trim();
-      document.getElementById("part").innerText = partNo;
-      document.getElementById("status").innerText = "✅ QR Scanned";
-      scanner.stop();
-    }
-  ).catch(() => {
-    document.getElementById("status").innerText = "❌ Camera permission denied";
-  });
-}
+  // ── Scanner ─────────────────────────────────────────────────
+  function toggleScanner() {
+    scanning ? stopScanner() : startScanner();
+  }
 
-// Manual entry
-function useManualPart() {
-  let val = document.getElementById("manualPart").value.trim();
-  if (!val) return alert("Enter valid part number");
+  function startScanner() {
+    document.getElementById("reader-wrap").classList.add("open");
+    document.getElementById("scan-btn").textContent = "Stop scanner";
+    setStatus("Requesting camera…", "");
+    scanning = true;
 
-  partNo = val;
-  document.getElementById("part").innerText = partNo;
-  document.getElementById("status").innerText = "✍️ Manual Part Selected";
-}
+    scanner = new Html5Qrcode("reader");
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 220 },
+      (decoded) => {
+        if (navigator.vibrate) navigator.vibrate(150);
+        stopScanner();
+        selectPart(decoded.trim());
+      }
+    ).catch(() => {
+      setStatus("Camera permission denied", "error");
+      stopScanner();
+    });
+  }
 
-// Submit
-function submitData() {
+  function stopScanner() {
+    if (scanner) { scanner.stop().catch(() => {}); scanner = null; }
+    scanning = false;
+    document.getElementById("reader-wrap").classList.remove("open");
+    document.getElementById("scan-btn").textContent = "Start scanner";
+  }
 
-  let qty = document.getElementById("qty").value;
-  let empId = document.getElementById("empId").value.trim();
-  let empName = document.getElementById("empName").value.trim();
-  let wo = document.getElementById("wo").value.trim();
-  let dateUsed = document.getElementById("dateUsed").value;
+  // ── Manual entry ─────────────────────────────────────────────
+  function useManual() {
+    const val = document.getElementById("manualPart").value.trim();
+    if (!val) { alert("Enter a part number first"); return; }
+    selectPart(val);
+    document.getElementById("manualPart").value = "";
+  }
 
-  if (!partNo) return alert("Select part first");
-  if (!qty || qty <= 0) return alert("Enter valid quantity");
-  if (!empId || !empName) return alert("Enter employee details");
-  if (!dateUsed) return alert("Select date");
+  // ── Part lookup ──────────────────────────────────────────────
+  function selectPart(no) {
+    partNo = no;
+    document.getElementById("part-display").textContent = no;
+    setStatus("Looking up part…", "");
 
-  document.getElementById("status").innerText = "⏳ Submitting...";
+    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + SECRET)
+      .then(r => r.json())
+      .then(d => {
+        const stockEl = document.getElementById("stock-display");
+        const descEl  = document.getElementById("part-desc");
+        if (d.error) {
+          setStatus("Part not found", "error");
+          stockEl.style.display = "none";
+          descEl.textContent = "";
+        } else {
+          const low = d.remaining <= (d.minStock || 5);
+          stockEl.textContent   = d.remaining + " remaining";
+          stockEl.className     = "stock-badge " + (low ? "stock-low" : "stock-ok");
+          stockEl.style.display = "inline";
+          descEl.textContent    = d.description + " · Bin " + d.bin;
+          setStatus("Ready", "");
+        }
+      })
+      .catch(() => setStatus("Lookup failed — check URL", "error"));
+  }
 
-  fetch("YOUR_WEB_APP_URL", {
-    method: "POST",
-    body: JSON.stringify({
-      partNo,
-      qty,
-      wo,
-      empId,
-      empName,
-      dateUsed
+  // ── Submit ───────────────────────────────────────────────────
+  function submitData() {
+    const qty     = Number(document.getElementById("qty").value);
+    const empId   = document.getElementById("empId").value.trim();
+    const empName = document.getElementById("empName").value.trim();
+    const wo      = document.getElementById("wo").value.trim();
+    const dateUsed = document.getElementById("dateUsed").value;
+
+    if (!partNo)            { alert("Select a part first"); return; }
+    if (!qty || qty <= 0)   { alert("Enter a valid quantity"); return; }
+    if (!empId || !empName) { alert("Enter employee details"); return; }
+    if (!dateUsed)          { alert("Select a date"); return; }
+
+    localStorage.setItem("empId",   empId);
+    localStorage.setItem("empName", empName);
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    setStatus("Submitting…", "");
+
+    fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        token: SECRET,
+        partNo, qty, wo, empId, empName,
+        dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
+      })
     })
-  })
-  .then(res => res.text())
-  .then(msg => {
-    alert(msg);
-    resetForm();
-  })
-  .catch(() => {
-    alert("❌ Server error");
-  });
-}
+    .then(r => r.json())
+    .then(d => {
+      btn.disabled = false;
+      if (d.success) {
+        setStatus("Done — " + d.remaining + " remaining", "success");
+        resetForm();
+      } else {
+        setStatus("Error: " + d.error, "error");
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+      setStatus("Server error", "error");
+    });
+  }
 
-// Reset form
-function resetForm() {
-  partNo = "";
-  document.getElementById("part").innerText = "None";
-  document.getElementById("qty").value = "";
-  document.getElementById("wo").value = "";
-  document.getElementById("manualPart").value = "";
-  document.getElementById("status").innerText = "Ready";
-}
+  // ── Helpers ──────────────────────────────────────────────────
+  function setStatus(msg, type) {
+    const el = document.getElementById("status");
+    el.textContent = msg;
+    el.className = "status " + type;
+  }
+
+  function resetForm() {
+    partNo = "";
+    document.getElementById("part-display").textContent = "None selected";
+    document.getElementById("stock-display").style.display = "none";
+    document.getElementById("part-desc").textContent = "";
+    document.getElementById("qty").value = "";
+    document.getElementById("wo").value  = "";
+  }
 </script>
 
 </body>
