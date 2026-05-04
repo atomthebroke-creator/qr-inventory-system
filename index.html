@@ -237,15 +237,15 @@
 
 <script>
   // ═══════════════════════════════════════════════════════════
-  //  STEP 1 — Replace the URL below with your Apps Script URL
+  //  STEP 1 — Replace with your Apps Script URL
   // ═══════════════════════════════════════════════════════════
-  var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
+  var WEB_APP_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
 
   // ═══════════════════════════════════════════════════════════
-  //  STEP 2 — Replace the token below with your chosen token
-  //           (must match TOKEN value in Script Properties)
+  //  STEP 2 — Replace with your token
+  //           (must match TOKEN in Script Properties)
   // ═══════════════════════════════════════════════════════════
-  var SECRET = "12345";
+  var SECRET = "PASTE_YOUR_TOKEN_HERE";
 
   // ── Init ──────────────────────────────────────────────────
   var scanner  = null;
@@ -308,9 +308,13 @@
     document.getElementById("part-display").textContent = no;
     setStatus("Looking up part...", "");
 
-    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + encodeURIComponent(SECRET))
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
+    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + encodeURIComponent(SECRET), {
+      redirect: "follow"
+    })
+    .then(function (r) { return r.text(); })
+    .then(function (text) {
+      try {
+        var d = JSON.parse(text);
         var stockEl = document.getElementById("stock-display");
         var descEl  = document.getElementById("part-desc");
         if (d.error) {
@@ -325,10 +329,13 @@
           descEl.textContent    = d.description + " \u00b7 Bin " + d.bin;
           setStatus("Ready", "");
         }
-      })
-      .catch(function () {
-        setStatus("Lookup failed \u2014 check URL", "error");
-      });
+      } catch (e) {
+        setStatus("Lookup failed \u2014 " + text, "error");
+      }
+    })
+    .catch(function () {
+      setStatus("Lookup failed \u2014 check URL", "error");
+    });
   }
 
   // ── Submit ────────────────────────────────────────────────
@@ -352,8 +359,9 @@
     setStatus("Submitting...", "");
 
     fetch(WEB_APP_URL, {
-      method: "POST",
-      body: JSON.stringify({
+      method   : "POST",
+      redirect : "follow",
+      body     : JSON.stringify({
         token    : SECRET,
         partNo   : partNo,
         qty      : qty,
@@ -363,14 +371,19 @@
         dateUsed : new Date(dateUsed + "T00:00:00+05:30").toISOString()
       })
     })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
+    .then(function (r) { return r.text(); })
+    .then(function (text) {
       btn.disabled = false;
-      if (d.success) {
-        setStatus("Done \u2014 " + d.remaining + " remaining", "success");
-        resetForm();
-      } else {
-        setStatus("Error: " + d.error, "error");
+      try {
+        var d = JSON.parse(text);
+        if (d.success) {
+          setStatus("Done \u2014 " + d.remaining + " remaining", "success");
+          resetForm();
+        } else {
+          setStatus("Error: " + d.error, "error");
+        }
+      } catch (e) {
+        setStatus("Response: " + text, "error");
       }
     })
     .catch(function () {
