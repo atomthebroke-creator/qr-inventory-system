@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <title>Inventory Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -10,41 +10,86 @@
       font-family: Arial;
       background:#0f0520;
       color:#fff;
-      padding:20px;
+      margin:0;
+      padding:10px;
+    }
+
+    h2 {
+      font-size:20px;
+      margin-bottom:10px;
       text-align:center;
     }
 
+    .box {
+      background:#240d45;
+      padding:14px;
+      border-radius:14px;
+      margin-bottom:12px;
+    }
+
     input, button {
-      width: 90%;
-      padding: 12px;
-      margin: 6px;
-      border-radius: 10px;
-      border: none;
-      font-size: 14px;
+      width:100%;
+      padding:16px;
+      margin-top:8px;
+      border-radius:12px;
+      border:none;
+      font-size:16px;
     }
 
-    input { background:#1a0a2e; color:#fff; }
-    button { background:#7c3aed; color:white; font-weight:bold; }
+    input {
+      background:#1a0a2e;
+      color:#fff;
+    }
 
-    /* 🔥 FIX: scanner will NEVER block clicks */
+    button {
+      background:#7c3aed;
+      color:white;
+      font-weight:bold;
+    }
+
+    button:active {
+      background:#6d28d9;
+    }
+
+    /* 📱 BIG SCANNER */
     #reader {
+      width:100%;
       margin-top:10px;
-      pointer-events: none;
+      border-radius:12px;
+      overflow:hidden;
     }
 
-    button, input {
-      position: relative;
-      z-index: 10;
+    /* 📌 Sticky submit button */
+    .sticky {
+      position:fixed;
+      bottom:10px;
+      left:10px;
+      right:10px;
+      z-index:20;
     }
 
     .ok  { color:#86efac; }
     .err { color:#f87171; }
 
-    .box {
-      background:#240d45;
-      padding:15px;
-      border-radius:12px;
-      margin-top:10px;
+    #status {
+      text-align:center;
+      margin-top:8px;
+      font-size:14px;
+    }
+
+    #partDisplay {
+      font-size:18px;
+      font-weight:bold;
+    }
+
+    #desc {
+      font-size:13px;
+      color:#c084fc;
+    }
+
+    #stock {
+      font-size:14px;
+      margin-top:4px;
     }
   </style>
 </head>
@@ -54,17 +99,16 @@
 <h2>📦 Inventory Scanner</h2>
 
 <div class="box">
-  <button onclick="toggleScanner()">Start Scanner</button>
+  <button onclick="startScanner()">📷 Start Camera</button>
   <div id="reader"></div>
 
-  <input id="manualPart" placeholder="Enter part manually">
-  <button onclick="useManual()">Use Part</button>
+  <input id="manualPart" placeholder="Type part & press Enter">
 </div>
 
 <div class="box">
-  <h3 id="partDisplay">No part selected</h3>
-  <p id="desc"></p>
-  <p id="stock"></p>
+  <div id="partDisplay">Scan a part</div>
+  <div id="desc"></div>
+  <div id="stock"></div>
 </div>
 
 <div class="box">
@@ -75,8 +119,10 @@
   <input id="wo" placeholder="Work Order">
 
   <input id="qty" type="number" placeholder="Quantity">
+</div>
 
-  <button onclick="submitData()">Submit</button>
+<div class="sticky">
+  <button onclick="submitData()">✅ Submit</button>
 </div>
 
 <p id="status"></p>
@@ -87,7 +133,6 @@ const URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl
 const TOKEN = "12345";
 
 let scanner = null;
-let scanning = false;
 let partNo = "";
 let currentStock = 0;
 let minStock = 0;
@@ -96,56 +141,36 @@ let minStock = 0;
 window.onload = () => {
   document.getElementById("dateUsed").value =
     new Date().toISOString().split("T")[0];
+
+  // 📱 Auto open camera on mobile
+  startScanner();
+
+  // Enter key for manual input
+  document.getElementById("manualPart").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") useManual();
+  });
 };
 
-// SCANNER
-function toggleScanner() {
-  scanning ? stopScanner() : startScanner();
-}
-
+// CAMERA
 function startScanner() {
-  scanner = new Html5Qrcode("reader");
-  scanning = true;
+  if (scanner) return;
 
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 },
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
     (text) => {
       if (navigator.vibrate) navigator.vibrate(100);
-      stopScanner();
       selectPart(text.trim());
     }
-  ).catch(() => {
-    setStatus("Camera error", "err");
-    scanning = false;
-  });
+  ).catch(() => setStatus("Camera blocked", "err"));
 }
 
-function stopScanner() {
-  if (scanner) {
-    scanner.stop().catch(()=>{});
-    scanner = null;
-  }
-  scanning = false;
-}
-
-// MANUAL ENTRY
+// MANUAL INPUT
 function useManual() {
-  // stop scanner if active
-  if (scanner) {
-    scanner.stop().catch(()=>{});
-    scanner = null;
-    scanning = false;
-  }
-
   const input = document.getElementById("manualPart");
   const val = input.value.trim();
 
-  if (!val) {
-    alert("Enter part number first");
-    input.focus();
-    return;
-  }
-
-  console.log("Manual input:", val);
+  if (!val) return;
 
   selectPart(val);
   input.value = "";
@@ -155,36 +180,24 @@ function useManual() {
 function selectPart(no) {
   partNo = no;
   document.getElementById("partDisplay").innerText = no;
-  setStatus("Checking part...", "");
+  setStatus("Checking...", "");
 
-  fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${encodeURIComponent(TOKEN)}`)
-  .then(res => res.text())
+  fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${TOKEN}`)
+  .then(r => r.text())
   .then(text => {
-    console.log("RAW RESPONSE:", text);
-
     let d;
-    try {
-      d = JSON.parse(text);
-    } catch {
-      setStatus("❌ Invalid server response", "err");
-      return;
-    }
+    try { d = JSON.parse(text); } catch { return setStatus("Server error", "err"); }
 
-    if (!d.success) {
-      setStatus(d.error || "Part not found", "err");
-      document.getElementById("desc").innerText = "";
-      document.getElementById("stock").innerText = "";
-      return;
-    }
+    if (!d.success) return setStatus("Not found", "err");
 
-    currentStock = Number(d.remaining) || 0;
-    minStock     = Number(d.minStock) || 0;
+    currentStock = d.remaining;
+    minStock = d.minStock;
 
     document.getElementById("desc").innerText =
-      `${d.description} | Bin: ${d.bin}`;
+      d.description + " | Bin: " + d.bin;
 
     document.getElementById("stock").innerText =
-      `Stock: ${currentStock}`;
+      "Stock: " + currentStock;
 
     if (currentStock <= minStock) {
       setStatus("⚠️ Low stock", "err");
@@ -193,8 +206,7 @@ function selectPart(no) {
     }
 
     document.getElementById("qty").focus();
-  })
-  .catch(() => setStatus("❌ Network error", "err"));
+  });
 }
 
 // SUBMIT
@@ -206,15 +218,15 @@ function submitData() {
   const dateUsed = document.getElementById("dateUsed").value;
 
   if (!partNo) return alert("Scan part first");
-  if (!qty || qty <= 0) return alert("Invalid quantity");
+  if (!qty || qty <= 0) return alert("Invalid qty");
   if (qty > currentStock) return alert("Not enough stock");
-  if (!empId || !empName) return alert("Enter employee details");
+  if (!empId || !empName) return alert("Enter employee");
 
   setStatus("Submitting...", "");
 
   fetch(URL, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       token: TOKEN,
       partNo,
@@ -222,33 +234,25 @@ function submitData() {
       wo,
       empId,
       empName,
-      dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
+      dateUsed: new Date(dateUsed).toISOString()
     })
   })
-  .then(res => res.text())
+  .then(r => r.text())
   .then(text => {
-    console.log("POST RAW:", text);
-
     let d;
-    try {
-      d = JSON.parse(text);
-    } catch {
-      setStatus("❌ Invalid response", "err");
-      return;
-    }
+    try { d = JSON.parse(text); } catch { return setStatus("Server error", "err"); }
 
     if (d.success) {
-      setStatus(`✔ Done | Remaining: ${d.remaining}`, "ok");
+      setStatus("✔ Done", "ok");
 
       document.getElementById("lastEntry").innerText =
-        `Last → ${partNo} | Qty: ${qty} | WO: ${wo}`;
+        `Last → ${partNo} | Qty ${qty}`;
 
       resetForm();
     } else {
       setStatus(d.error, "err");
     }
-  })
-  .catch(() => setStatus("❌ Server error", "err"));
+  });
 }
 
 // RESET
