@@ -105,6 +105,9 @@ window.onload = () => {
 };
 
 /* 📷 SCANNER (SCAN ONCE → STOP) */
+let scanner = null;
+let scanLocked = false;
+
 function startScanner() {
   if (scanner) return;
 
@@ -124,18 +127,14 @@ function startScanner() {
 
       if (navigator.vibrate) navigator.vibrate(100);
 
-      console.log("Scanned:", cleaned);
-
-      // show instantly
       document.getElementById("partDisplay").innerText = cleaned;
       document.getElementById("desc").innerText = "Loading...";
 
-      // STOP scanner
+      // 🛑 stop after scan
       scanner.stop().then(() => {
         scanner = null;
       });
 
-      // lookup
       selectPart(cleaned);
     }
   ).catch(() => setStatus("Camera blocked", "err"));
