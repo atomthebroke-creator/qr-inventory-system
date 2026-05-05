@@ -57,8 +57,10 @@
 <h2>📦 Inventory Scanner</h2>
 
 <div class="box">
+  <button onclick="startScanner()">📷 Start Scan</button>
+  <button onclick="stopScanner()">🛑 Stop Scan</button>
+
   <div id="reader"></div>
-  <button onclick="startScanner()">🔄 Scan Again</button>
 
   <input id="manualPart" placeholder="Type part & press Enter">
 </div>
@@ -82,7 +84,7 @@
 <p id="status"></p>
 
 <script>
-const URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
+const URL = "YOUR_WEB_APP_URL";   // 🔴 replace
 const TOKEN = "12345";
 
 let scanner = null;
@@ -96,18 +98,13 @@ window.onload = () => {
   document.getElementById("dateUsed").value =
     new Date().toISOString().split("T")[0];
 
-  startScanner();
-
   document.getElementById("manualPart")
     .addEventListener("keypress", e => {
       if (e.key === "Enter") useManual();
     });
 };
 
-/* 📷 SCANNER (SCAN ONCE → STOP) */
-let scanner = null;
-let scanLocked = false;
-
+/* 📷 START SCANNER */
 function startScanner() {
   if (scanner) return;
 
@@ -123,26 +120,43 @@ function startScanner() {
       if (scanLocked) return;
       scanLocked = true;
 
-      const cleaned = text.trim();
+      // 🔥 CLEAN SCANNED VALUE
+      const cleaned = text
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase()
+        .trim();
 
       if (navigator.vibrate) navigator.vibrate(100);
 
       document.getElementById("partDisplay").innerText = cleaned;
       document.getElementById("desc").innerText = "Loading...";
 
-      // 🛑 stop after scan
-      scanner.stop().then(() => {
-        scanner = null;
-      });
+      // 🛑 STOP AFTER ONE SCAN
+      stopScanner();
 
       selectPart(cleaned);
     }
   ).catch(() => setStatus("Camera blocked", "err"));
 }
 
+/* 🛑 STOP SCANNER */
+function stopScanner() {
+  if (scanner) {
+    scanner.stop().then(() => {
+      scanner = null;
+    }).catch(()=>{});
+  }
+}
+
 /* ⌨️ MANUAL */
 function useManual() {
-  const val = document.getElementById("manualPart").value.trim();
+  let val = document.getElementById("manualPart").value;
+
+  val = val
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
+    .trim();
+
   if (!val) return;
 
   document.getElementById("manualPart").value = "";
