@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Fast Inventory Scanner</title>
+  <title>Inventory Scanner</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- no cache -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -45,24 +42,24 @@
       overflow:hidden;
     }
 
-    .sticky {
-      position:fixed;
-      bottom:10px;
-      left:10px;
-      right:10px;
-    }
-
-    .ok { color:#86efac; }
+    .ok  { color:#86efac; }
     .err { color:#f87171; }
+
+    #partDisplay {
+      font-size:18px;
+      font-weight:bold;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>📦 Fast Scanner</h2>
+<h2>📦 Inventory Scanner</h2>
 
 <div class="box">
   <div id="reader"></div>
+  <button onclick="startScanner()">🔄 Scan Again</button>
+
   <input id="manualPart" placeholder="Type part & press Enter">
 </div>
 
@@ -78,9 +75,7 @@
   <input id="empName" placeholder="Employee Name">
   <input id="wo" placeholder="Work Order">
   <input id="qty" type="number" placeholder="Quantity">
-</div>
 
-<div class="sticky">
   <button onclick="submitData()">✅ Submit</button>
 </div>
 
@@ -90,9 +85,8 @@
 const URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
 const TOKEN = "12345";
 
-let scanner;
-let lastScan = "";
-let lastScanTime = 0;
+let scanner = null;
+let scanLocked = false;
 let partNo = "";
 let currentStock = 0;
 let minStock = 0;
@@ -110,33 +104,36 @@ window.onload = () => {
     });
 };
 
-/* FAST SCANNER */
+/* 📷 SCANNER (SCAN ONCE → STOP) */
 function startScanner() {
+  if (scanner) return;
+
+  scanLocked = false;
+
   scanner = new Html5Qrcode("reader");
 
   scanner.start(
     { facingMode: "environment" },
-    {
-      fps: 20,             // ⚡ faster scanning
-      qrbox: { width: 280, height: 280 } // 🎯 bigger target
-    },
+    { fps: 15, qrbox: 250 },
     (text) => {
 
-      const now = Date.now();
+      if (scanLocked) return;
+      scanLocked = true;
+
       const cleaned = text.trim();
 
-      // 🧠 prevent duplicate scans within 2 sec
-      if (cleaned === lastScan && (now - lastScanTime < 2000)) return;
+      if (navigator.vibrate) navigator.vibrate(100);
 
-      lastScan = cleaned;
-      lastScanTime = now;
+      console.log("Scanned:", cleaned);
 
-      if (navigator.vibrate) navigator.vibrate(80);
-
-      console.log("SCAN:", cleaned);
-
-      // ⚡ show instantly
+      // show instantly
       document.getElementById("partDisplay").innerText = cleaned;
+      document.getElementById("desc").innerText = "Loading...";
+
+      // STOP scanner
+      scanner.stop().then(() => {
+        scanner = null;
+      });
 
       // lookup
       selectPart(cleaned);
@@ -144,7 +141,7 @@ function startScanner() {
   ).catch(() => setStatus("Camera blocked", "err"));
 }
 
-/* MANUAL */
+/* ⌨️ MANUAL */
 function useManual() {
   const val = document.getElementById("manualPart").value.trim();
   if (!val) return;
@@ -153,19 +150,33 @@ function useManual() {
   selectPart(val);
 }
 
-/* LOOKUP */
+/* 🔍 LOOKUP */
 function selectPart(no) {
   partNo = no;
+
+  document.getElementById("partDisplay").innerText = no;
+  document.getElementById("desc").innerText = "Loading...";
+  document.getElementById("stock").innerText = "";
+
   setStatus("Checking...", "");
 
   fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${TOKEN}`)
-  .then(r => r.text())
+  .then(res => res.text())
   .then(text => {
+
     let d;
     try { d = JSON.parse(text); }
-    catch { return setStatus("Server error", "err"); }
+    catch {
+      setStatus("Server error", "err");
+      document.getElementById("desc").innerText = "Invalid response";
+      return;
+    }
 
-    if (!d.success) return setStatus("Not found", "err");
+    if (!d.success) {
+      setStatus("Part not found", "err");
+      document.getElementById("desc").innerText = "Not found";
+      return;
+    }
 
     currentStock = d.remaining;
     minStock = d.minStock;
@@ -176,14 +187,16 @@ function selectPart(no) {
     document.getElementById("stock").innerText =
       "Stock: " + currentStock;
 
-    setStatus(currentStock <= minStock ? "⚠️ Low stock" : "Ready",
-              currentStock <= minStock ? "err" : "ok");
+    setStatus(
+      currentStock <= minStock ? "⚠️ Low stock" : "Ready",
+      currentStock <= minStock ? "err" : "ok"
+    );
 
     document.getElementById("qty").focus();
   });
 }
 
-/* SUBMIT */
+/* 📤 SUBMIT */
 function submitData() {
   const qty = Number(document.getElementById("qty").value);
   const empId = document.getElementById("empId").value.trim();
@@ -211,7 +224,7 @@ function submitData() {
       dateUsed: new Date(dateUsed).toISOString()
     })
   })
-  .then(r => r.text())
+  .then(res => res.text())
   .then(text => {
     let d;
     try { d = JSON.parse(text); }
@@ -226,9 +239,11 @@ function submitData() {
   });
 }
 
-/* RESET */
+/* 🔄 RESET */
 function resetForm() {
   partNo = "";
+  scanLocked = false;
+
   document.getElementById("partDisplay").innerText = "Scan next part";
   document.getElementById("desc").innerText = "";
   document.getElementById("stock").innerText = "";
