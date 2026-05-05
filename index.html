@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Inventory Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Fast Inventory Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- 🔥 FORCE NO CACHE -->
+  <!-- no cache -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -20,11 +18,7 @@
       padding:10px;
     }
 
-    h2 {
-      text-align:center;
-      font-size:20px;
-      margin-bottom:10px;
-    }
+    h2 { text-align:center; }
 
     .box {
       background:#240d45;
@@ -42,27 +36,13 @@
       font-size:16px;
     }
 
-    input {
-      background:#1a0a2e;
-      color:#fff;
-    }
+    input { background:#1a0a2e; color:#fff; }
+    button { background:#7c3aed; color:#fff; }
 
-    button {
-      background:#7c3aed;
-      color:white;
-      font-weight:bold;
-    }
-
-    button:active {
-      background:#6d28d9;
-    }
-
-    /* 📷 scanner safe */
     #reader {
       width:100%;
       border-radius:12px;
       overflow:hidden;
-      pointer-events:none; /* 🔥 prevent blocking */
     }
 
     .sticky {
@@ -70,42 +50,19 @@
       bottom:10px;
       left:10px;
       right:10px;
-      z-index:20;
     }
 
-    .ok  { color:#86efac; }
+    .ok { color:#86efac; }
     .err { color:#f87171; }
-
-    #status {
-      text-align:center;
-      margin-top:8px;
-      font-size:14px;
-    }
-
-    #partDisplay {
-      font-size:18px;
-      font-weight:bold;
-    }
-
-    #desc {
-      font-size:13px;
-      color:#c084fc;
-    }
-
-    #stock {
-      margin-top:4px;
-    }
   </style>
 </head>
 
 <body>
 
-<h2>📦 Inventory Scanner</h2>
+<h2>📦 Fast Scanner</h2>
 
 <div class="box">
-  <button onclick="startScanner()">📷 Start Camera</button>
   <div id="reader"></div>
-
   <input id="manualPart" placeholder="Type part & press Enter">
 </div>
 
@@ -128,83 +85,77 @@
 </div>
 
 <p id="status"></p>
-<p id="lastEntry"></p>
 
 <script>
 const URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
 const TOKEN = "12345";
 
-let scanner = null;
+let scanner;
+let lastScan = "";
+let lastScanTime = 0;
 let partNo = "";
 let currentStock = 0;
 let minStock = 0;
 
-/* 🔥 FORCE TRUE RELOAD ON MOBILE BACK CACHE */
-window.addEventListener("pageshow", function (event) {
-  if (event.persisted) {
-    location.reload();
-  }
-});
-
-/* 🔄 FULL RESET ON LOAD */
+/* INIT */
 window.onload = () => {
-  resetApp();
-  setTimeout(startScanner, 300);
+  document.getElementById("dateUsed").value =
+    new Date().toISOString().split("T")[0];
+
+  startScanner();
 
   document.getElementById("manualPart")
-    .addEventListener("keypress", function(e) {
+    .addEventListener("keypress", e => {
       if (e.key === "Enter") useManual();
     });
 };
 
-function resetApp() {
-  partNo = "";
-  currentStock = 0;
-  minStock = 0;
-
-  document.getElementById("partDisplay").innerText = "Scan a part";
-  document.getElementById("desc").innerText = "";
-  document.getElementById("stock").innerText = "";
-  document.getElementById("qty").value = "";
-  document.getElementById("wo").value = "";
-
-  document.getElementById("dateUsed").value =
-    new Date().toISOString().split("T")[0];
-
-  if (scanner) {
-    scanner.stop().catch(()=>{});
-    scanner = null;
-  }
-}
-
-/* 📷 CAMERA */
+/* FAST SCANNER */
 function startScanner() {
-  if (scanner) return;
-
   scanner = new Html5Qrcode("reader");
 
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 20,             // ⚡ faster scanning
+      qrbox: { width: 280, height: 280 } // 🎯 bigger target
+    },
     (text) => {
-      if (navigator.vibrate) navigator.vibrate(100);
-      selectPart(text.trim());
+
+      const now = Date.now();
+      const cleaned = text.trim();
+
+      // 🧠 prevent duplicate scans within 2 sec
+      if (cleaned === lastScan && (now - lastScanTime < 2000)) return;
+
+      lastScan = cleaned;
+      lastScanTime = now;
+
+      if (navigator.vibrate) navigator.vibrate(80);
+
+      console.log("SCAN:", cleaned);
+
+      // ⚡ show instantly
+      document.getElementById("partDisplay").innerText = cleaned;
+
+      // lookup
+      selectPart(cleaned);
     }
   ).catch(() => setStatus("Camera blocked", "err"));
 }
 
-/* ⌨️ MANUAL */
+/* MANUAL */
 function useManual() {
-  const input = document.getElementById("manualPart");
-  const val = input.value.trim();
+  const val = document.getElementById("manualPart").value.trim();
   if (!val) return;
 
+  document.getElementById("manualPart").value = "";
   selectPart(val);
-  input.value = "";
 }
 
-/* 🔍 LOOKUP */
+/* LOOKUP */
 function selectPart(no) {
   partNo = no;
-  document.getElementById("partDisplay").innerText = no;
   setStatus("Checking...", "");
 
   fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${TOKEN}`)
@@ -232,7 +183,7 @@ function selectPart(no) {
   });
 }
 
-/* 📤 SUBMIT */
+/* SUBMIT */
 function submitData() {
   const qty = Number(document.getElementById("qty").value);
   const empId = document.getElementById("empId").value.trim();
@@ -268,18 +219,24 @@ function submitData() {
 
     if (d.success) {
       setStatus("✔ Done", "ok");
-
-      document.getElementById("lastEntry").innerText =
-        `Last → ${partNo} | Qty ${qty}`;
-
-      resetApp();
+      resetForm();
     } else {
       setStatus(d.error, "err");
     }
   });
 }
 
-/* 📢 STATUS */
+/* RESET */
+function resetForm() {
+  partNo = "";
+  document.getElementById("partDisplay").innerText = "Scan next part";
+  document.getElementById("desc").innerText = "";
+  document.getElementById("stock").innerText = "";
+  document.getElementById("qty").value = "";
+  document.getElementById("wo").value = "";
+}
+
+/* STATUS */
 function setStatus(msg, type) {
   const el = document.getElementById("status");
   el.innerText = msg;
