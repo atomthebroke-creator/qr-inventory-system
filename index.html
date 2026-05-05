@@ -4,409 +4,221 @@
   <title>Inventory Scanner</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/html5-qrcode"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: Arial, sans-serif;
-      background: #0f0520;
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 20px 0 40px;
+      font-family: Arial;
+      background:#0f0520;
+      color:#fff;
+      padding:20px;
+      text-align:center;
     }
 
-    .container {
-      width: 100%;
-      max-width: 400px;
-      padding: 0 16px;
-    }
-
-    .topbar {
-      background: #2d0f5e;
-      border-radius: 20px 20px 0 0;
-      padding: 20px 20px 16px;
-      border: 1px solid #3d1f6e;
-      border-bottom: none;
-    }
-    .topbar h1 { font-size: 18px; font-weight: 600; color: #e8d5ff; }
-    .topbar p  { font-size: 13px; color: #9b6fd4; margin-top: 3px; }
-
-    .card {
-      background: #240d45;
-      border: 1px solid #3d1f6e;
-      padding: 16px;
-      margin-top: 10px;
-      border-radius: 16px;
-    }
-    .card-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #9b6fd4;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    #reader-wrap {
-      overflow: hidden;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      max-height: 0;
-      transition: max-height .35s ease;
-    }
-    #reader-wrap.open { max-height: 300px; }
-    #reader { width: 100%; }
-
-    .btn-main {
-      width: 100%;
-      padding: 13px;
-      border-radius: 10px;
-      border: none;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #7c3aed;
-      color: #fff;
-      transition: background .15s;
-    }
-    .btn-main:active { background: #6d28d9; }
-
-    .btn-sec {
-      width: 100%;
+    input, button {
+      width: 90%;
       padding: 12px;
+      margin: 6px;
       border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      background: transparent;
-      color: #c084fc;
-      border: 1px solid #5b2fa0;
-      margin-top: 8px;
-      transition: background .15s;
-    }
-    .btn-sec:active { background: #1a0a2e; }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 12px 0;
-    }
-    .divider hr   { flex: 1; border: none; border-top: 1px solid #3d1f6e; }
-    .divider span { font-size: 11px; color: #5b2fa0; }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="date"] {
-      width: 100%;
-      padding: 11px 13px;
-      border-radius: 10px;
-      border: 1px solid #3d1f6e;
-      background: #1a0a2e;
-      font-size: 14px;
-      color: #e8d5ff;
-      outline: none;
-      margin-top: 6px;
-      transition: border-color .15s;
-    }
-    input:focus        { border-color: #7c3aed; }
-    input::placeholder { color: #5b2fa0; }
-
-    .part-pill {
-      background: #1a0a2e;
-      border: 1px solid #5b2fa0;
-      border-radius: 10px;
-      padding: 11px 13px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .plabel { font-size: 11px; color: #9b6fd4; }
-    .pval   { font-size: 15px; font-weight: 600; color: #e8d5ff; margin-top: 2px; }
-
-    .stock-badge {
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .stock-ok  { background: #14532d; border: 1px solid #166534; color: #86efac; }
-    .stock-low { background: #713f12; border: 1px solid #854d0e; color: #fde68a; }
-
-    .part-desc {
-      font-size: 12px;
-      color: #9b6fd4;
-      margin-bottom: 6px;
-    }
-
-    .field-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .field-label {
-      font-size: 11px;
-      color: #9b6fd4;
-      margin-top: 12px;
-      margin-bottom: 2px;
-      display: block;
-    }
-
-    .submit-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
       border: none;
-      background: #7c3aed;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 14px;
-      transition: background .15s;
+      font-size: 14px;
     }
-    .submit-btn:active   { background: #6d28d9; }
-    .submit-btn:disabled { background: #3d1f6e; color: #5b2fa0; cursor: not-allowed; }
 
-    .status         { text-align: center; font-size: 13px; color: #7a4bbf; margin-top: 10px; min-height: 20px; }
-    .status.success { color: #86efac; }
-    .status.error   { color: #f87171; }
+    input { background:#1a0a2e; color:#fff; }
+    button { background:#7c3aed; color:white; font-weight:bold; }
+
+    #reader { margin-top:10px; }
+
+    .ok  { color:#86efac; }
+    .err { color:#f87171; }
+
+    .box {
+      background:#240d45;
+      padding:15px;
+      border-radius:12px;
+      margin-top:10px;
+    }
   </style>
 </head>
+
 <body>
 
-<div class="container">
+<h2>📦 Inventory Scanner</h2>
 
-  <div class="topbar">
-    <h1>Inventory Scanner</h1>
-    <p>Scan QR or enter part manually</p>
-  </div>
+<div class="box">
+  <button onclick="toggleScanner()">Start Scanner</button>
+  <div id="reader"></div>
 
-  <!-- Scanner card -->
-  <div class="card">
-    <div class="card-title">Scan part</div>
-    <div id="reader-wrap"><div id="reader"></div></div>
-    <button class="btn-main" id="scan-btn" onclick="toggleScanner()">Start scanner</button>
-    <div class="divider"><hr><span>or enter manually</span><hr></div>
-    <input type="text" id="manualPart" placeholder="Enter part number">
-    <button class="btn-sec" onclick="useManual()">Use part</button>
-  </div>
-
-  <!-- Form card -->
-  <div class="card">
-    <div class="card-title">Usage details</div>
-
-    <div class="part-pill">
-      <div>
-        <div class="plabel">Part no.</div>
-        <div class="pval" id="part-display">None selected</div>
-      </div>
-      <span class="stock-badge stock-ok" id="stock-display" style="display:none"></span>
-    </div>
-    <div class="part-desc" id="part-desc"></div>
-
-    <span class="field-label">Date used</span>
-    <input type="date" id="dateUsed">
-
-    <div class="field-row">
-      <div>
-        <span class="field-label">Employee ID</span>
-        <input type="text" id="empId" placeholder="EMP-001">
-      </div>
-      <div>
-        <span class="field-label">Name</span>
-        <input type="text" id="empName" placeholder="Your name">
-      </div>
-    </div>
-
-    <span class="field-label">WO description</span>
-    <input type="text" id="wo" placeholder="e.g. PM-2025-06 Motor overhaul">
-
-    <span class="field-label">Quantity</span>
-    <input type="number" id="qty" placeholder="1" min="1">
-
-    <button class="submit-btn" id="submit-btn" onclick="submitData()">Submit usage</button>
-    <div class="status" id="status">Ready</div>
-  </div>
-
+  <input id="manualPart" placeholder="Enter part manually">
+  <button onclick="useManual()">Use Part</button>
 </div>
 
+<div class="box">
+  <h3 id="partDisplay">No part selected</h3>
+  <p id="desc"></p>
+  <p id="stock"></p>
+</div>
+
+<div class="box">
+  <input id="dateUsed" type="date">
+
+  <input id="empId" placeholder="Employee ID">
+  <input id="empName" placeholder="Employee Name">
+  <input id="wo" placeholder="Work Order">
+
+  <input id="qty" type="number" placeholder="Quantity">
+
+  <button onclick="submitData()">Submit</button>
+</div>
+
+<p id="status"></p>
+<p id="lastEntry"></p>
+
 <script>
-  // ═══════════════════════════════════════════════════════════
-  //  STEP 1 — Replace with your Apps Script URL
-  // ═══════════════════════════════════════════════════════════
-  var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMN2fAttAA16dV_lJKxp7FmVXl0lfaidv1Vb2dI3_iqY6upMeFdqBnidTqjIcXwdQcEw/exec";
+const URL = "YOUR_WEB_APP_URL";   // 🔴 replace
+const TOKEN = "12345";            // 🔴 replace
 
-  // ═══════════════════════════════════════════════════════════
-  //  STEP 2 — Replace with your token
-  //           (must match TOKEN in Script Properties)
-  // ═══════════════════════════════════════════════════════════
-  var SECRET = "12345";
+let scanner = null;
+let scanning = false;
+let partNo = "";
+let currentStock = 0;
+let minStock = 0;
 
-  // ── Init ──────────────────────────────────────────────────
-  var scanner  = null;
-  var scanning = false;
-  var partNo   = "";
+// INIT
+window.onload = () => {
+  document.getElementById("dateUsed").value =
+    new Date().toISOString().split("T")[0];
+};
 
-  window.onload = function () {
-    document.getElementById("dateUsed").value =
-      new Date().toISOString().split("T")[0];
-    document.getElementById("empId").value =
-      localStorage.getItem("empId") || "";
-    document.getElementById("empName").value =
-      localStorage.getItem("empName") || "";
-  };
+// SCANNER
+function toggleScanner() {
+  scanning ? stopScanner() : startScanner();
+}
 
-  // ── Scanner ───────────────────────────────────────────────
-  function toggleScanner() {
-    scanning ? stopScanner() : startScanner();
-  }
+function startScanner() {
+  scanner = new Html5Qrcode("reader");
+  scanning = true;
 
-  function startScanner() {
-    document.getElementById("reader-wrap").classList.add("open");
-    document.getElementById("scan-btn").textContent = "Stop scanner";
-    setStatus("Requesting camera...", "");
-    scanning = true;
-
-    scanner = new Html5Qrcode("reader");
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 220 },
-      function (decoded) {
-        if (navigator.vibrate) navigator.vibrate(150);
-        stopScanner();
-        selectPart(decoded.trim());
-      }
-    ).catch(function () {
-      setStatus("Camera permission denied", "error");
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 },
+    (text) => {
+      if (navigator.vibrate) navigator.vibrate(100);
       stopScanner();
-    });
-  }
-
-  function stopScanner() {
-    if (scanner) { scanner.stop().catch(function () {}); scanner = null; }
+      selectPart(text.trim());
+    }
+  ).catch(() => {
+    setStatus("Camera error", "err");
     scanning = false;
-    document.getElementById("reader-wrap").classList.remove("open");
-    document.getElementById("scan-btn").textContent = "Start scanner";
+  });
+}
+
+function stopScanner() {
+  if (scanner) {
+    scanner.stop().catch(()=>{});
+    scanner = null;
   }
+  scanning = false;
+}
 
-  // ── Manual entry ──────────────────────────────────────────
-  function useManual() {
-    var val = document.getElementById("manualPart").value.trim();
-    if (!val) { alert("Enter a part number first"); return; }
-    selectPart(val);
-    document.getElementById("manualPart").value = "";
-  }
+// MANUAL
+function useManual() {
+  const val = document.getElementById("manualPart").value.trim();
+  if (!val) return alert("Enter part");
+  selectPart(val);
+}
 
-  // ── Part lookup ───────────────────────────────────────────
-  function selectPart(no) {
-    partNo = no;
-    document.getElementById("part-display").textContent = no;
-    setStatus("Looking up part...", "");
+// LOOKUP
+function selectPart(no) {
+  partNo = no;
+  document.getElementById("partDisplay").innerText = no;
+  setStatus("Checking part...", "");
 
-    fetch(WEB_APP_URL + "?partNo=" + encodeURIComponent(no) + "&token=" + encodeURIComponent(SECRET), {
-      redirect: "follow"
+  fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${TOKEN}`)
+  .then(r => r.json())
+  .then(d => {
+    if (!d.success) {
+      setStatus("Part not found", "err");
+      return;
+    }
+
+    currentStock = d.remaining;
+    minStock = d.minStock;
+
+    document.getElementById("desc").innerText =
+      d.description + " | Bin: " + d.bin;
+
+    document.getElementById("stock").innerText =
+      "Stock: " + d.remaining;
+
+    if (d.remaining <= d.minStock) {
+      setStatus("⚠️ Low stock", "err");
+    } else {
+      setStatus("Ready", "ok");
+    }
+
+    document.getElementById("qty").focus();
+  })
+  .catch(() => setStatus("Lookup error", "err"));
+}
+
+// SUBMIT
+function submitData() {
+  const qty = Number(document.getElementById("qty").value);
+  const empId = document.getElementById("empId").value.trim();
+  const empName = document.getElementById("empName").value.trim();
+  const wo = document.getElementById("wo").value.trim();
+  const dateUsed = document.getElementById("dateUsed").value;
+
+  if (!partNo) return alert("Scan part first");
+  if (!qty || qty <= 0) return alert("Invalid quantity");
+  if (qty > currentStock) return alert("Not enough stock");
+  if (!empId || !empName) return alert("Enter employee details");
+
+  setStatus("Submitting...", "");
+
+  fetch(URL, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      token: TOKEN,
+      partNo,
+      qty,
+      wo,
+      empId,
+      empName,
+      dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
     })
-    .then(function (r) { return r.text(); })
-    .then(function (text) {
-      try {
-        var d = JSON.parse(text);
-        var stockEl = document.getElementById("stock-display");
-        var descEl  = document.getElementById("part-desc");
-        if (d.error) {
-          setStatus("Part not found", "error");
-          stockEl.style.display = "none";
-          descEl.textContent = "";
-        } else {
-          var low = d.remaining <= 5;
-          stockEl.textContent   = d.remaining + " remaining";
-          stockEl.className     = "stock-badge " + (low ? "stock-low" : "stock-ok");
-          stockEl.style.display = "inline";
-          descEl.textContent    = d.description + " \u00b7 Bin " + d.bin;
-          setStatus("Ready", "");
-        }
-      } catch (e) {
-        setStatus("Lookup failed \u2014 " + text, "error");
-      }
-    })
-    .catch(function () {
-      setStatus("Lookup failed \u2014 check URL", "error");
-    });
-  }
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      setStatus(`✔ Done | Remaining: ${d.remaining}`, "ok");
 
-  // ── Submit ────────────────────────────────────────────────
-  function submitData() {
-    var qty      = Number(document.getElementById("qty").value);
-    var empId    = document.getElementById("empId").value.trim();
-    var empName  = document.getElementById("empName").value.trim();
-    var wo       = document.getElementById("wo").value.trim();
-    var dateUsed = document.getElementById("dateUsed").value;
+      document.getElementById("lastEntry").innerText =
+        `Last Entry → ${partNo} | Qty: ${qty} | WO: ${wo}`;
 
-    if (!partNo)            { alert("Select a part first"); return; }
-    if (!qty || qty <= 0)   { alert("Enter a valid quantity"); return; }
-    if (!empId || !empName) { alert("Enter employee details"); return; }
-    if (!dateUsed)          { alert("Select a date"); return; }
+      resetForm();
+    } else {
+      setStatus(d.error, "err");
+    }
+  })
+  .catch(() => setStatus("Server error", "err"));
+}
 
-    localStorage.setItem("empId",   empId);
-    localStorage.setItem("empName", empName);
+// RESET
+function resetForm() {
+  partNo = "";
+  document.getElementById("partDisplay").innerText = "Scan next part";
+  document.getElementById("desc").innerText = "";
+  document.getElementById("stock").innerText = "";
+  document.getElementById("qty").value = "";
+  document.getElementById("wo").value = "";
+}
 
-    var btn = document.getElementById("submit-btn");
-    btn.disabled = true;
-    setStatus("Submitting...", "");
-
-    fetch(WEB_APP_URL, {
-      method   : "POST",
-      redirect : "follow",
-      body     : JSON.stringify({
-        token    : SECRET,
-        partNo   : partNo,
-        qty      : qty,
-        wo       : wo,
-        empId    : empId,
-        empName  : empName,
-        dateUsed : new Date(dateUsed + "T00:00:00+05:30").toISOString()
-      })
-    })
-    .then(function (r) { return r.text(); })
-    .then(function (text) {
-      btn.disabled = false;
-      try {
-        var d = JSON.parse(text);
-        if (d.success) {
-          setStatus("Done \u2014 " + d.remaining + " remaining", "success");
-          resetForm();
-        } else {
-          setStatus("Error: " + d.error, "error");
-        }
-      } catch (e) {
-        setStatus("Response: " + text, "error");
-      }
-    })
-    .catch(function () {
-      btn.disabled = false;
-      setStatus("Server error", "error");
-    });
-  }
-
-  // ── Helpers ───────────────────────────────────────────────
-  function setStatus(msg, type) {
-    var el = document.getElementById("status");
-    el.textContent = msg;
-    el.className   = "status " + type;
-  }
-
-  function resetForm() {
-    partNo = "";
-    document.getElementById("part-display").textContent = "None selected";
-    document.getElementById("stock-display").style.display = "none";
-    document.getElementById("part-desc").textContent = "";
-    document.getElementById("qty").value = "";
-    document.getElementById("wo").value  = "";
-  }
+// STATUS
+function setStatus(msg, type) {
+  const el = document.getElementById("status");
+  el.innerText = msg;
+  el.className = type;
+}
 </script>
 
 </body>
