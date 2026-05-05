@@ -3,6 +3,12 @@
 <head>
   <title>Inventory Scanner</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <!-- 🔥 FORCE NO CACHE -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -15,9 +21,9 @@
     }
 
     h2 {
+      text-align:center;
       font-size:20px;
       margin-bottom:10px;
-      text-align:center;
     }
 
     .box {
@@ -51,15 +57,14 @@
       background:#6d28d9;
     }
 
-    /* 📱 BIG SCANNER */
+    /* 📷 scanner safe */
     #reader {
       width:100%;
-      margin-top:10px;
       border-radius:12px;
       overflow:hidden;
+      pointer-events:none; /* 🔥 prevent blocking */
     }
 
-    /* 📌 Sticky submit button */
     .sticky {
       position:fixed;
       bottom:10px;
@@ -88,7 +93,6 @@
     }
 
     #stock {
-      font-size:14px;
       margin-top:4px;
     }
   </style>
@@ -113,11 +117,9 @@
 
 <div class="box">
   <input id="dateUsed" type="date">
-
   <input id="empId" placeholder="Employee ID">
   <input id="empName" placeholder="Employee Name">
   <input id="wo" placeholder="Work Order">
-
   <input id="qty" type="number" placeholder="Quantity">
 </div>
 
@@ -137,21 +139,45 @@ let partNo = "";
 let currentStock = 0;
 let minStock = 0;
 
-// INIT
+/* 🔥 FORCE TRUE RELOAD ON MOBILE BACK CACHE */
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    location.reload();
+  }
+});
+
+/* 🔄 FULL RESET ON LOAD */
 window.onload = () => {
+  resetApp();
+  setTimeout(startScanner, 300);
+
+  document.getElementById("manualPart")
+    .addEventListener("keypress", function(e) {
+      if (e.key === "Enter") useManual();
+    });
+};
+
+function resetApp() {
+  partNo = "";
+  currentStock = 0;
+  minStock = 0;
+
+  document.getElementById("partDisplay").innerText = "Scan a part";
+  document.getElementById("desc").innerText = "";
+  document.getElementById("stock").innerText = "";
+  document.getElementById("qty").value = "";
+  document.getElementById("wo").value = "";
+
   document.getElementById("dateUsed").value =
     new Date().toISOString().split("T")[0];
 
-  // 📱 Auto open camera on mobile
-  startScanner();
+  if (scanner) {
+    scanner.stop().catch(()=>{});
+    scanner = null;
+  }
+}
 
-  // Enter key for manual input
-  document.getElementById("manualPart").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") useManual();
-  });
-};
-
-// CAMERA
+/* 📷 CAMERA */
 function startScanner() {
   if (scanner) return;
 
@@ -165,18 +191,17 @@ function startScanner() {
   ).catch(() => setStatus("Camera blocked", "err"));
 }
 
-// MANUAL INPUT
+/* ⌨️ MANUAL */
 function useManual() {
   const input = document.getElementById("manualPart");
   const val = input.value.trim();
-
   if (!val) return;
 
   selectPart(val);
   input.value = "";
 }
 
-// LOOKUP
+/* 🔍 LOOKUP */
 function selectPart(no) {
   partNo = no;
   document.getElementById("partDisplay").innerText = no;
@@ -186,7 +211,8 @@ function selectPart(no) {
   .then(r => r.text())
   .then(text => {
     let d;
-    try { d = JSON.parse(text); } catch { return setStatus("Server error", "err"); }
+    try { d = JSON.parse(text); }
+    catch { return setStatus("Server error", "err"); }
 
     if (!d.success) return setStatus("Not found", "err");
 
@@ -199,17 +225,14 @@ function selectPart(no) {
     document.getElementById("stock").innerText =
       "Stock: " + currentStock;
 
-    if (currentStock <= minStock) {
-      setStatus("⚠️ Low stock", "err");
-    } else {
-      setStatus("Ready", "ok");
-    }
+    setStatus(currentStock <= minStock ? "⚠️ Low stock" : "Ready",
+              currentStock <= minStock ? "err" : "ok");
 
     document.getElementById("qty").focus();
   });
 }
 
-// SUBMIT
+/* 📤 SUBMIT */
 function submitData() {
   const qty = Number(document.getElementById("qty").value);
   const empId = document.getElementById("empId").value.trim();
@@ -240,7 +263,8 @@ function submitData() {
   .then(r => r.text())
   .then(text => {
     let d;
-    try { d = JSON.parse(text); } catch { return setStatus("Server error", "err"); }
+    try { d = JSON.parse(text); }
+    catch { return setStatus("Server error", "err"); }
 
     if (d.success) {
       setStatus("✔ Done", "ok");
@@ -248,24 +272,14 @@ function submitData() {
       document.getElementById("lastEntry").innerText =
         `Last → ${partNo} | Qty ${qty}`;
 
-      resetForm();
+      resetApp();
     } else {
       setStatus(d.error, "err");
     }
   });
 }
 
-// RESET
-function resetForm() {
-  partNo = "";
-  document.getElementById("partDisplay").innerText = "Scan next part";
-  document.getElementById("desc").innerText = "";
-  document.getElementById("stock").innerText = "";
-  document.getElementById("qty").value = "";
-  document.getElementById("wo").value = "";
-}
-
-// STATUS
+/* 📢 STATUS */
 function setStatus(msg, type) {
   const el = document.getElementById("status");
   el.innerText = msg;
