@@ -120,9 +120,27 @@ function stopScanner() {
 
 // MANUAL
 function useManual() {
-  const val = document.getElementById("manualPart").value.trim();
-  if (!val) return alert("Enter part");
+  // 🛑 Stop scanner if running (IMPORTANT)
+  if (scanner) {
+    scanner.stop().catch(()=>{});
+    scanner = null;
+    scanning = false;
+  }
+
+  const input = document.getElementById("manualPart");
+  const val = input.value.trim();
+
+  if (!val) {
+    alert("Enter part number first");
+    input.focus();
+    return;
+  }
+
+  // ✅ proceed
   selectPart(val);
+
+  // 🔄 clear input
+  input.value = "";
 }
 
 // LOOKUP
