@@ -131,34 +131,56 @@ function selectPart(no) {
   document.getElementById("partDisplay").innerText = no;
   setStatus("Checking part...", "");
 
-  fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${TOKEN}`)
-  .then(r => r.json())
-  .then(d => {
-    if (!d.success) {
-      setStatus("Part not found", "err");
+  fetch(`${URL}?partNo=${encodeURIComponent(no)}&token=${encodeURIComponent(TOKEN)}`, {
+    method: "GET",
+    redirect: "follow"
+  })
+  .then(res => res.text())   // 👈 ALWAYS read as text
+  .then(text => {
+    console.log("RAW RESPONSE:", text);
+
+    let d;
+    try {
+      d = JSON.parse(text);
+    } catch (err) {
+      setStatus("❌ Server did not return JSON", "err");
+      console.error("Invalid JSON:", text);
       return;
     }
 
-    currentStock = d.remaining;
-    minStock = d.minStock;
+    // 🔴 Handle backend errors
+    if (!d.success) {
+      setStatus(d.error || "Part not found", "err");
+      document.getElementById("desc").innerText = "";
+      document.getElementById("stock").innerText = "";
+      return;
+    }
+
+    // ✅ SUCCESS CASE
+    currentStock = Number(d.remaining) || 0;
+    minStock     = Number(d.minStock) || 0;
 
     document.getElementById("desc").innerText =
-      d.description + " | Bin: " + d.bin;
+      `${d.description} | Bin: ${d.bin}`;
 
     document.getElementById("stock").innerText =
-      "Stock: " + d.remaining;
+      `Stock: ${currentStock}`;
 
-    if (d.remaining <= d.minStock) {
+    // 🔔 Low stock indicator
+    if (currentStock <= minStock) {
       setStatus("⚠️ Low stock", "err");
     } else {
       setStatus("Ready", "ok");
     }
 
+    // 🎯 Auto focus quantity
     document.getElementById("qty").focus();
   })
-  .catch(() => setStatus("Lookup error", "err"));
+  .catch(err => {
+    console.error(err);
+    setStatus("❌ Network / URL error", "err");
+  });
 }
-
 // SUBMIT
 function submitData() {
   const qty = Number(document.getElementById("qty").value);
@@ -174,34 +196,46 @@ function submitData() {
 
   setStatus("Submitting...", "");
 
-  fetch(URL, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      token: TOKEN,
-      partNo,
-      qty,
-      wo,
-      empId,
-      empName,
-      dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
-    })
+ fetch(URL, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  redirect: "follow",
+  body: JSON.stringify({
+    token: TOKEN,
+    partNo,
+    qty,
+    wo,
+    empId,
+    empName,
+    dateUsed: new Date(dateUsed + "T00:00:00+05:30").toISOString()
   })
-  .then(r => r.json())
-  .then(d => {
-    if (d.success) {
-      setStatus(`✔ Done | Remaining: ${d.remaining}`, "ok");
+})
+.then(res => res.text())
+.then(text => {
+  console.log("POST RAW:", text);
 
-      document.getElementById("lastEntry").innerText =
-        `Last Entry → ${partNo} | Qty: ${qty} | WO: ${wo}`;
+  let d;
+  try {
+    d = JSON.parse(text);
+  } catch {
+    setStatus("❌ Invalid server response", "err");
+    return;
+  }
 
-      resetForm();
-    } else {
-      setStatus(d.error, "err");
-    }
-  })
-  .catch(() => setStatus("Server error", "err"));
-}
+  if (d.success) {
+    setStatus(`✔ Done | Remaining: ${d.remaining}`, "ok");
+
+    document.getElementById("lastEntry").innerText =
+      `Last → ${partNo} | Qty: ${qty} | WO: ${wo}`;
+
+    resetForm();
+  } else {
+    setStatus(d.error, "err");
+  }
+})
+.catch(() => setStatus("❌ Server error", "err"));
 
 // RESET
 function resetForm() {
