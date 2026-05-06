@@ -226,7 +226,6 @@ function submitData() {
 
   fetch(URL, {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       token: TOKEN,
       partNo,
@@ -239,19 +238,29 @@ function submitData() {
   })
   .then(res => res.text())
   .then(text => {
+
+    console.log("POST RAW:", text); // debug
+
     let d;
-    try { d = JSON.parse(text); }
-    catch { return setStatus("Server error", "err"); }
+    try {
+      d = JSON.parse(text);
+    } catch {
+      setStatus("❌ Invalid response", "err");
+      return;
+    }
 
     if (d.success) {
-      setStatus("✔ Done", "ok");
+      setStatus(`✔ Done | Remaining: ${d.remaining}`, "ok");
       resetForm();
     } else {
-      setStatus(d.error, "err");
+      setStatus(d.error || "Error", "err");
     }
+  })
+  .catch(err => {
+    console.error(err);
+    setStatus("❌ Network error", "err");
   });
 }
-
 /* 🔄 RESET */
 function resetForm() {
   partNo = "";
